@@ -1,0 +1,28 @@
+version: '3'
+services:
+  app_server:
+    container_name: app-server
+    build: ./app-server
+    environment:
+      - FLASK_APP=/srv/app/wsgi.py
+      - FLASK_DEBUG=1
+      - FLASK_SECRET_KEY=sandbox
+    volumes:
+      - ./app-server/app:/srv/app
+    # command: flask run --host=0.0.0.0 --port=5000
+    command: gunicorn wsgi:app --chdir /srv/app -b 0.0.0.0:5000
+
+  http_server:
+    container_name: http-server
+    build: ./http-server
+    ports:
+      - "443:443"
+      - "80:80"
+    restart: always
+    volumes:
+      - ./http-server/nginx.config:/etc/nginx/sites-enabled/default
+        #      - ./http-server/self-signed.conf:/etc/nginx/snippets/self-signed.conf
+        #      - ./http-server/nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt
+        #      - ./http-server/nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key
+        #      - ./http-server/dhparam.pem:/etc/nginx/dhparam.pem
+        #      - ./http-server/ssl-params.conf:/etc/nginx/snippets/ssl-params.conf
