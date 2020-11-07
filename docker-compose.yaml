@@ -12,17 +12,24 @@ services:
     # command: flask run --host=0.0.0.0 --port=5000
     command: gunicorn wsgi:app --chdir /srv/app -b 0.0.0.0:5000
 
+  certbot:
+    container_name: certbot
+    image: certbot/certbot
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
   http_server:
     container_name: http-server
+    image: nginx:1.15-alpine
     build: ./http-server
-    ports:
-      - "443:443"
-      - "80:80"
-    restart: always
     volumes:
       - ./http-server/nginx.config:/etc/nginx/sites-enabled/default
-        #      - ./http-server/self-signed.conf:/etc/nginx/snippets/self-signed.conf
-        #      - ./http-server/nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt
-        #      - ./http-server/nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key
-        #      - ./http-server/dhparam.pem:/etc/nginx/dhparam.pem
-        #      - ./http-server/ssl-params.conf:/etc/nginx/snippets/ssl-params.conf
+      # - ./data/nginx:/etc/nginx/conf.d
+      - ./web-client/app/static:/srv/static
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
